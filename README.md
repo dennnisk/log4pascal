@@ -20,18 +20,18 @@ initialization
 
 ### Features
 
- - Disable Logging.
+- Disable Logging.
   - `SetQuietMode();`
- - Enable Logging. By default, logging is enabled.
+- Enable Logging. By default, logging is enabled.
   - `SetNoisyMode();`
- - Enable or disable specific logs
+- Enable or disable specific logs
   - `EnableTraceLog();` `EnableDebugLog();` `EnableInfoLog();` `EnableWarningLog();` `EnableErrorLog();` `EnableFatalLog();`
   - `DisableTraceLog();` `DisableDebugLog();` `DisableInfoLog();` `DisableWarningLog();` `DisableErrorLog();` `DisableFatalLog();`
- - Clean up existing log file
+- Clean up existing log file
   - `Clear();`
- - Enable/Disable Log Rotatition files
+- Enable/Disable Log Rotatition files
   - `Logger.UseLogRotation := False`;
- - Change Log file max site (MaxLogSizeInBytes)
+- Change Log file max site (MaxLogSizeInBytes)
   - `Logger.MaxLogSizeInBytes := 1048576; // Default 1Mb = 1.048.576 bytes`;
 - Change log files that will be keept
   - `Logger.KeepQuantity := 10; // Default 10 files`;
@@ -42,7 +42,7 @@ initialization
 
 ```delphi
 Logger.Trace('Trace message log');
-Logger.Debug('Message is logged only when in debug');
+Logger.Debug('Debug message log');
 Logger.Info('Normal message log');
 Logger.Warning('Warning message log');
 Logger.Error('Error message log');
@@ -53,7 +53,7 @@ Logger.Fatal('Fatal message log');
 
 ```txt
 2023/05/30 15:00:26 [TRACE] Trace message log 
-2023/05/30 15:00:26 [DEBUG] Message is logged only when in debug 
+2023/05/30 15:00:26 [DEBUG] Debug message log
 2023/05/30 15:00:26 [INFO ] Normal message log 
 2023/05/30 15:00:26 [WARN ] Warning message log 
 2023/05/30 15:00:26 [ERROR] Error message log 
