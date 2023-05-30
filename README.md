@@ -29,7 +29,15 @@ initialization
   - `DisableTraceLog();` `DisableDebugLog();` `DisableInfoLog();` `DisableWarningLog();` `DisableErrorLog();` `DisableFatalLog();`
  - Clean up existing log file
   - `Clear();`
-
+ - Enable/Disable Log Rotatition files
+  - `Logger.UseLogRotation := False`;
+ - Change Log file max site (MaxLogSizeInBytes)
+  - `Logger.MaxLogSizeInBytes := 1048576; // Default 1Mb = 1.048.576 bytes`;
+- Change log files that will be keept
+  - `Logger.KeepQuantity := 10; // Default 10 files`;
+- Change directory to file rotation history (Directory to keep the old log files)
+  - `Logger.DirectoryFileRotationHistory := IncludeTrailingPathDelimiter(FullApplicationPath + 'LogHistory'); `;
+  
 ##### Logs
 
 ```delphi
@@ -44,12 +52,12 @@ Logger.Fatal('Fatal message log');
 ###### Output
 
 ```txt
-TRACE Trace message log [DATETIME HERE]
-DEBUG Message is logged only when in debug [DATETIME HERE]
-INFO  Normal message log [DATETIME HERE]
-WARN  Warning message log [DATETIME HERE]
-ERROR Error message log [DATETIME HERE]
-FATAL Fatal message log [DATETIME HERE]
+2023/05/30 15:00:26 [TRACE] Trace message log 
+2023/05/30 15:00:26 [DEBUG] Message is logged only when in debug 
+2023/05/30 15:00:26 [INFO ] Normal message log 
+2023/05/30 15:00:26 [WARN ] Warning message log 
+2023/05/30 15:00:26 [ERROR] Error message log 
+2023/05/30 15:00:26 [FATAL] Fatal message log 
 ```
 
 ## Known bugs
