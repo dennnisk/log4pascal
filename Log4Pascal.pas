@@ -15,22 +15,36 @@ interface
 type
   TLogTypes = (ltTrace, ltDebug, ltInfo, ltWarning, ltError, ltFatal);
 
+  { TLogger }
+
   TLogger = class
   private
+    FDirectoryFileRotationHistory: String;
     FFileName: string;
+    FKeepQuantity: Word;
     FIsInit: Boolean;
     FOutFile: TextFile;
+    FMaxLogSizeInBytes: LongInt;
     FQuietMode: Boolean;
     FQuietTypes: set of TLogTypes;
+    FUseLogRotation: Boolean;
     procedure Initialize;
     procedure CreateFoldersIfNecessary;
+    function RotateLogFiles: Word;
     procedure Finalize;
+
+    // TODO: Make it in Thread, and write asynchronously.
+    //       That manner it will not impact in the system performance
     procedure Write(const Msg: string);
   public
     constructor Create(const FileName: string);
     destructor Destroy; override;
 
     property FileName: string read FFileName;
+    property KeepQuantity: Word read FKeepQuantity write FKeepQuantity;
+    property UseLogRotation: Boolean read FUseLogRotation write FUseLogRotation;
+    property MaxLogSizeInBytes: Longint read FMaxLogSizeInBytes write FMaxLogSizeInBytes;
+    property DirectoryFileRotationHistory: String read FDirectoryFileRotationHistory write FDirectoryFileRotationHistory;
 
     procedure SetQuietMode;
     procedure DisableTraceLog;
@@ -66,16 +80,17 @@ implementation
 uses
   Forms,
   SysUtils,
-  Windows;
+  Windows,
+  LConvEncoding;
 
 const
   FORMAT_LOG = '%s %s';
-  PREFIX_TRACE = 'TRACE';
-  PREFIX_DEBUG = 'DEBUG';
-  PREFIX_INFO  = 'INFO ';
-  PREFIX_WARN  = 'WARN ';
-  PREFIX_ERROR = 'ERROR';
-  PREFIX_FATAL = 'FATAL';
+  PREFIX_TRACE = '[TRACE]';
+  PREFIX_DEBUG = '[DEBUG]';
+  PREFIX_INFO  = '[INFO ]';
+  PREFIX_WARN  = '[WARN ]';
+  PREFIX_ERROR = '[ERROR]';
+  PREFIX_FATAL = '[FATAL]';
 
 { TLogger }
 
@@ -93,11 +108,20 @@ begin
 end;
 
 constructor TLogger.Create(const FileName: string);
+var
+  FullApplicationPath: string;
 begin
   FFileName := FileName;
   FIsInit := False;
   Self.SetNoisyMode;
   FQuietTypes := [];
+
+  FullApplicationPath := IncludeTrailingPathDelimiter(ExtractFilePath(Application.ExeName));
+  FDirectoryFileRotationHistory := IncludeTrailingPathDelimiter(FullApplicationPath + 'LogHistory');
+  FKeepQuantity := 10;
+  FMaxLogSizeInBytes := 10485760;
+  FUseLogRotation := True;
+
 end;
  
 procedure TLogger.CreateFoldersIfNecessary;
@@ -109,17 +133,88 @@ begin
 
   if Pos(':', FilePath) > 0 then
     ForceDirectories(FilePath)
-  else begin
+  else
+  begin
     FullApplicationPath := ExtractFilePath(Application.ExeName);
     ForceDirectories(IncludeTrailingPathDelimiter(FullApplicationPath) + FilePath);
   end;
 end;
 
+function TLogger.RotateLogFiles: Word;
+
+  function _getFileSize(aFilePath: String): Int64;
+  var F : File Of byte;
+  begin
+    Assign (F, aFilePath);
+    Reset (F);
+    Result := FileSize(F);
+    Close (F);
+  end;
+
+  function _getRotationFileName(id: Integer): String;
+  var
+    FileName, FileExtension: String;
+  begin
+    FileName := ExtractFileName(FFileName);
+    FileExtension := ExtractFileExt(FFileName);
+    delete(FileName, length(FileExtension), length(FileName) - length(FileExtension)+1);
+    Result := Format('%s%s_%s%s',
+           [FDirectoryFileRotationHistory,
+            FileName,
+            IntToStr(id),
+            FileExtension]);
+  end;
+
+var
+  i: Integer;
+  RotationFileName: String;
+begin
+  Result := 0;
+
+  if (FMaxLogSizeInBytes > 0) and
+     (FKeepQuantity > 0) and
+     (_getFileSize(FFileName) > FMaxLogSizeInBytes) then
+  begin
+
+    try
+      ForceDirectories(FDirectoryFileRotationHistory);
+
+      i := FKeepQuantity;
+      while (i >= 0) do
+      begin
+        RotationFileName := _getRotationFileName(i);
+        if FileExists(RotationFileName) then
+        begin
+          if (i = FKeepQuantity) then
+             if not DeleteFile(PChar(RotationFileName)) then
+                break;
+
+          if RenameFile(RotationFileName, _getRotationFileName(i+1)) then
+            inc(Result);
+        end;
+
+        dec(i);
+      end;
+
+      if RenameFile(FFileName, _getRotationFileName(0)) then
+         inc(Result);
+
+    finally
+      // indicate that not was possibled, or not necessary to renema the log files
+      // so, is necessary to open file to continue with the log write
+      if (Result = 0) then
+        AssignFile(FOutFile, FFileName);
+    end;
+  end;
+end;
+
+
 procedure TLogger.Debug(const Msg: string);
+//function IsDebuggerPresent(): integer stdcall; external 'kernel32.dll';
 begin
   {$WARN SYMBOL_PLATFORM OFF}
-  if DebugHook = 0 then
-    Exit;
+  //if IsDebuggerPresent > 0 then
+//    Exit;
   {$WARN SYMBOL_PLATFORM ON}
 
   if not (ltDebug in FQuietTypes) then
@@ -222,10 +317,19 @@ begin
     Self.CreateFoldersIfNecessary;
     
     AssignFile(FOutFile, FFileName);
+
     if not FileExists(FFileName) then
       Rewrite(FOutFile)
     else
-      Append(FOutFile);
+    begin
+      if (RotateLogFiles() > 0) then
+      begin
+        AssignFile(FOutFile, FFileName);
+        Rewrite(FOutFile);
+      end
+      else
+        Append(FOutFile);
+    end;
   end;
 
   FIsInit := True;
@@ -261,7 +365,7 @@ end;
  
 procedure TLogger.Write(const Msg: string);
 const
-  FORMAT_DATETIME_DEFAULT = 'yyyy-mm-dd hh:nn:ss';
+  FORMAT_DATETIME_DEFAULT = 'yyyymmdd hh:nn:ss';
 begin
   if FQuietMode then
     Exit;
@@ -269,11 +373,12 @@ begin
   Self.Initialize;
   try
     if FIsInit then
-      Writeln(FOutFile, Format('%s [%s]', [Msg, FormatDateTime(FORMAT_DATETIME_DEFAULT, Now)]));
+      Writeln(FOutFile, Format('%s %s ', [FormatDateTime(FORMAT_DATETIME_DEFAULT, Now), Msg]));
   finally
     Self.Finalize;
   end;
 end;
+
 
 initialization
   Logger := TLogger.Create('Log.txt');
