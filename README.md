@@ -63,12 +63,23 @@ Logger.Fatal('Fatal message log');
 ## Known bugs
 
 ### Free Pascal
-Using Lazarus (Free Pascal) there were 1 errors compiling module:
-`Identifier not found "DebugHook"`
+Using Lazarus (Free Pascal) there were 1 errors compiling module: `Identifier not found "DebugHook"`
 
-So if you want to use the Log4Pascal in Free Pascal, you must delete (or replace) the following line found in Log4Pascal unit:
+This is solved in this project (Removed).
+
+To maintein the code, just uncomment the following lines in the `Debug()` Method:
 ```Delphi
-if DebugHook = 0 then Exit;
+procedure TLogger.Debug(const Msg: string);
+//function IsDebuggerPresent(): integer stdcall; external 'kernel32.dll';
+begin
+  {$WARN SYMBOL_PLATFORM OFF}
+  //if IsDebuggerPresent > 0 then
+//    Exit;
+  {$WARN SYMBOL_PLATFORM ON}
+
+  if not (ltDebug in FQuietTypes) then
+    Self.Write(Format(FORMAT_LOG, [PREFIX_DEBUG, Msg]));
+end;  
 ```
 
 ## License
