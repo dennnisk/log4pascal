@@ -119,7 +119,7 @@ begin
   FullApplicationPath := IncludeTrailingPathDelimiter(ExtractFilePath(Application.ExeName));
   FDirectoryFileRotationHistory := IncludeTrailingPathDelimiter(FullApplicationPath + 'LogHistory');
   FKeepQuantity := 10;
-  FMaxLogSizeInBytes := 10485760;
+  FMaxLogSizeInBytes := 1048576;  // 1Mb = 1.048.576 bytes
   FUseLogRotation := True;
 
 end;
@@ -365,7 +365,7 @@ end;
  
 procedure TLogger.Write(const Msg: string);
 const
-  FORMAT_DATETIME_DEFAULT = 'yyyymmdd hh:nn:ss';
+  FORMAT_DATETIME_DEFAULT = 'yyyy/mm/dd hh:nn:ss';
 begin
   if FQuietMode then
     Exit;
