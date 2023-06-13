@@ -28,6 +28,7 @@ type
     FQuietMode: Boolean;
     FQuietTypes: set of TLogTypes;
     FUseLogRotation: Boolean;
+
     procedure Initialize;
     procedure CreateFoldersIfNecessary;
     function RotateLogFiles: Word;
@@ -36,6 +37,11 @@ type
     // TODO: Make it in Thread, and write asynchronously.
     //       That manner it will not impact in the system performance
     procedure Write(const Msg: string);
+
+    Procedure WriteToTXT( const ArqTXT : String; const ABinaryString : AnsiString;
+       const AppendIfExists : Boolean = True; const AddLineBreak : Boolean = True;
+       const ForceDirectory : Boolean = False);
+
   public
     constructor Create(const FileName: string);
     destructor Destroy; override;
@@ -73,7 +79,7 @@ type
   end;
 
 var
-  Logger: TLogger;
+  Logger4Pascal: TLogger;
 
 implementation
 
@@ -81,7 +87,9 @@ uses
   Forms,
   SysUtils,
   Windows,
-  LConvEncoding;
+  LConvEncoding,
+  Classes,
+  Math;
 
 const
   FORMAT_LOG = '%s %s';
@@ -301,6 +309,8 @@ end;
 
 procedure TLogger.Finalize;
 begin
+  Exit;
+
   if (FIsInit and (not FQuietMode)) then
     CloseFile(FOutFile);
 
@@ -309,6 +319,8 @@ end;
  
 procedure TLogger.Initialize;
 begin
+  exit;
+
   if FIsInit then
     CloseFile(FOutFile);
 
@@ -370,20 +382,71 @@ begin
   if FQuietMode then
     Exit;
 
-  Self.Initialize;
+  WriteToTXT(FFileName, Format('%s %s ', [FormatDateTime(FORMAT_DATETIME_DEFAULT, Now), Msg]), true, true, true);
+
+  {Self.Initialize;
   try
     if FIsInit then
       Writeln(FOutFile, Format('%s %s ', [FormatDateTime(FORMAT_DATETIME_DEFAULT, Now), Msg]));
   finally
     Self.Finalize;
+  end;}
+end;
+
+procedure TLogger.WriteToTXT(const ArqTXT: String;
+  const ABinaryString: AnsiString; const AppendIfExists: Boolean;
+  const AddLineBreak: Boolean; const ForceDirectory: Boolean);
+var
+  FS: TFileStream;
+  LineBreak: AnsiString;
+  VDirectory: String;
+  ArquivoExiste: Boolean;
+begin
+  if ArqTXT = EmptyStr then
+    Exit;
+
+  ArquivoExiste := FileExists(ArqTXT);
+
+  if ArquivoExiste then
+  begin
+    if (Length(ABinaryString) = 0) then
+      Exit;
+
+    RotateLogFiles();
+
+  end
+  else
+  begin
+    if ForceDirectory then
+    begin
+      VDirectory := ExtractFileDir(ArqTXT);
+      if (EmptyStr = VDirectory) and (not DirectoryExists(VDirectory)) then
+        ForceDirectories(VDirectory);
+    end;
+  end;
+
+  FS := TFileStream.Create( ArqTXT,
+          IfThen(AppendIfExists and ArquivoExiste,
+                 Integer(fmOpenReadWrite), Integer(fmCreate)) or fmShareDenyWrite);
+  try
+    FS.Seek(0, soEnd);  // vai para EOF
+    FS.Write(Pointer(ABinaryString)^,Length(ABinaryString));
+
+    if AddLineBreak then
+    begin
+      LineBreak := sLineBreak;
+      FS.Write(Pointer(LineBreak)^,Length(LineBreak));
+    end;
+  finally
+    FS.Free;
   end;
 end;
 
 
 initialization
-  Logger := TLogger.Create('Log.txt');
+  Logger4Pascal := TLogger.Create('besser-varejo-pay.log');
 
 finalization
-  Logger.Free;
+  Logger4Pascal.Free;
 
 end.
