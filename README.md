@@ -1,6 +1,6 @@
 # Log4Pascal
 
-Log4pascal is an Open Source project that aims to produce a simple logging unit for ObjectPascal (Delphi, FreePascal).
+Log4pascal is an Open Source project that aims to produce a simple logging unit for ObjectPascal (Lazarus, Delphi, etc), with log rotation files.
 
 Log4Pascal is NOT based on the Log4J package from the Apache Software Foundation. Well, just the name.
 
@@ -31,12 +31,15 @@ initialization
   - `Clear();`
 - Enable/Disable Log Rotatition files
   - `Logger.UseLogRotation := False`;
+  - File log will append a number at the end of the file name, like: `mylog_0.log`, `mylog_1.log`, `mylog_2.log` ...
 - Change Log file max site (MaxLogSizeInBytes)
   - `Logger.MaxLogSizeInBytes := 1048576; // Default 1Mb = 1.048.576 bytes`;
 - Change log files that will be keept
   - `Logger.KeepQuantity := 10; // Default 10 files`;
 - Change directory to file rotation history (Directory to keep the old log files)
   - `Logger.DirectoryFileRotationHistory := IncludeTrailingPathDelimiter(FullApplicationPath + 'LogHistory'); `;
+  - Default is the path `LogHistory` directory under `.exe` file
+    
   
 ##### Logs
 
@@ -63,9 +66,8 @@ Logger.Fatal('Fatal message log');
 ## Known bugs
 
 ### Free Pascal
-Using Lazarus (Free Pascal) there were 1 errors compiling module: `Identifier not found "DebugHook"`
 
-This is solved in this project (Removed).
+Using Lazarus (Free Pascal) there were 1 errors compiling module: `Identifier not found "DebugHook"` :: **This is solved in this project (Removed).**
 
 To maintein the code, just uncomment the following lines in the `Debug()` Method:
 ```Delphi
