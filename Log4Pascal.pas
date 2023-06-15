@@ -19,6 +19,7 @@ type
 
   TLogger = class
   private
+    FFullApplicationPath: String;
     FDirectoryFileRotationHistory: String;
     FFileName: string;
     FKeepQuantity: Word;
@@ -116,20 +117,19 @@ begin
 end;
 
 constructor TLogger.Create(const FileName: string);
-var
-  FullApplicationPath: string;
 begin
   FFileName := FileName;
   FIsInit := False;
   Self.SetNoisyMode;
   FQuietTypes := [];
 
-  FullApplicationPath := IncludeTrailingPathDelimiter(ExtractFilePath(Application.ExeName));
-  FDirectoryFileRotationHistory := IncludeTrailingPathDelimiter(FullApplicationPath + 'LogHistory');
+  FFullApplicationPath := IncludeTrailingPathDelimiter(ExtractFilePath(Application.ExeName));
+  FDirectoryFileRotationHistory := IncludeTrailingPathDelimiter(FFullApplicationPath + 'LogHistory');
   FKeepQuantity := 10;
   FMaxLogSizeInBytes := 1048576;  // 1Mb = 1.048.576 bytes
   FUseLogRotation := True;
 
+  CreateFoldersIfNecessary;
 end;
  
 procedure TLogger.CreateFoldersIfNecessary;
@@ -165,7 +165,7 @@ function TLogger.RotateLogFiles: Word;
   begin
     FileName := ExtractFileName(FFileName);
     FileExtension := ExtractFileExt(FFileName);
-    delete(FileName, length(FileExtension), length(FileName) - length(FileExtension)+1);
+    FileName := StringReplace(FileName, FileExtension, '', []);
     Result := Format('%s%s_%s%s',
            [FDirectoryFileRotationHistory,
             FileName,
@@ -382,7 +382,7 @@ begin
   if FQuietMode then
     Exit;
 
-  WriteToTXT(FFileName, Format('%s %s ', [FormatDateTime(FORMAT_DATETIME_DEFAULT, Now), Msg]), true, true, true);
+  WriteToTXT(FFullApplicationPath + FFileName, Format('%s %s ', [FormatDateTime(FORMAT_DATETIME_DEFAULT, Now), Msg]), true, true, true);
 
   {Self.Initialize;
   try
