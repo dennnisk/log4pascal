@@ -1,12 +1,14 @@
-# Log4Pascal
+# Log4Pascal-Simple
 
-Log4pascal is an Open Source project that aims to produce a simple logging unit for ObjectPascal (Lazarus, Delphi, etc), with log rotation files.
+Log4pascal-Simple is an Open Source project that aims to produce a simple logging unit for ObjectPascal (Lazarus, Delphi, etc), with log rotation files.
 
 Log4Pascal is NOT based on the Log4J package from the Apache Software Foundation. Well, just the name.
 
+This software if based on https://github.com/martinusso/log4pascal project.
+
 ## How to use
 
-Just add the unit `Log4Pascal.pas` to project.
+Just add the unit `Log4Pascal.pas` to your project.
   - ``Project -> Add to Project`` and then locate and choose the file.
 
 ### Log file
@@ -15,20 +17,13 @@ The log file is defined in the unit Log4Pascal, so if you want to change, modify
 
 ```delphi
 initialization
-  Logger := TLogger.Create('Log.txt');
+  Logger := TLogger.Create('app.log');
 ```
+
+Or, comment and initialize it manually.
 
 ### Features
 
-- Disable Logging.
-  - `SetQuietMode();`
-- Enable Logging. By default, logging is enabled.
-  - `SetNoisyMode();`
-- Enable or disable specific logs
-  - `EnableTraceLog();` `EnableDebugLog();` `EnableInfoLog();` `EnableWarningLog();` `EnableErrorLog();` `EnableFatalLog();`
-  - `DisableTraceLog();` `DisableDebugLog();` `DisableInfoLog();` `DisableWarningLog();` `DisableErrorLog();` `DisableFatalLog();`
-- Clean up existing log file
-  - `Clear();`
 - Enable/Disable Log Rotatition files
   - `Logger.UseLogRotation := False`;
   - File log will append a number at the end of the file name, like: `mylog_0.log`, `mylog_1.log`, `mylog_2.log` ...
